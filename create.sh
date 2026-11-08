@@ -5,13 +5,13 @@
 # 만드는 것
 #   contents.md   장절을 갖춘 발표 내용 초안. 사람이 직접 채운다
 #   materials/    근거 자료와 원본 미디어. 배포물에 들어가지 않는다
-#   output/imgs/  덱이 참조하는 그림과 동영상
+#   build/imgs/   덱이 참조하는 그림과 동영상. 덱 원본과 중간 파일은 build/ 에 둔다
 #
 # contents.md 가 이미 있으면 덮어쓰지 않는다.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-mkdir -p materials output/imgs
+mkdir -p materials build/imgs
 
 if [ -e contents.md ]; then
   echo "contents.md 가 이미 있다. 그대로 둔다"
@@ -36,7 +36,7 @@ else
          수식 안에는 ASCII 만 넣는다. 한글, `·`, `×`, `→`, `≤` 를 넣지 않는다
          부등호와 화살표는 명령어로 적는다. `\le` `\ge` `\ne` `\to` `\times` `\in`
          `\*` 는 에러다. `T^{*}` 또는 `T^{\star}` 로 적는다
-- 원본 파일은 `materials/` 에 둔다. 덱에 들어가는 변환본은 클로드가 `output/imgs/` 에 만든다
+- 원본 파일은 `materials/` 에 둔다. 덱에 들어가는 변환본은 클로드가 `build/imgs/` 에 만든다
 
 기타
 - 장 바로 아래 `구분 슬라이드: 필요` 를 적으면 그 장 앞에 번호 없는 파트 구분 슬라이드가 들어간다
@@ -156,5 +156,5 @@ echo "다음 단계"
 echo "  1) contents.md 를 채운다"
 echo "  2) 그림, 표, 동영상 원본을 materials/ 에 둔다"
 echo "  3) 클로드에 \"컨텐츠 제작\" 을 지시한다"
-echo "     -> slide.md, review.md, output/<타이틀>_<학생이름>.html"
-echo "     -> output/<타이틀>_<학생이름>.pdf 까지 클로드가 굽는다"
+echo "     -> slide.md, review.md, build/<타이틀>_<학생이름>.html (편집용 원본)"
+echo "     -> output/<타이틀>_<학생이름>.html (배포용 단일 HTML) 과 PDF 까지 클로드가 굽는다"

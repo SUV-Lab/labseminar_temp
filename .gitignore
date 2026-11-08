@@ -7,6 +7,7 @@
 # 원본 미디어와 배포물. 덱에는 imgs/ 의 변환본만 들어간다
 /materials/
 /output/
+/build/
 
 # 편집기가 덱 옆에 만드는 배치 스타일
 /design/cde-layout.css

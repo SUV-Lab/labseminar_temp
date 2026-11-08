@@ -31,10 +31,10 @@
 
   | 덱 파일 | 대체 방식 | 자리 크기 |
   |---|---|---|
-  | `output/imgs/sensor_limits.svg` | 개념 도해 | 1692x376 (가로비 4.50) |
-  | `output/imgs/architecture.svg` | 노드 구성도 | 918x674 (가로비 1.36) |
-  | `output/imgs/rmse_plot.svg` | 합성 파형 | 1020x416 (가로비 2.45) |
-  | `output/imgs/flight.mp4` | 합성 궤적 재생 | 1156x674 (가로비 1.72) |
+  | `build/imgs/sensor_limits.svg` | 개념 도해 | 1692x376 (가로비 4.50) |
+  | `build/imgs/architecture.svg` | 노드 구성도 | 918x674 (가로비 1.36) |
+  | `build/imgs/rmse_plot.svg` | 합성 파형 | 1020x416 (가로비 2.45) |
+  | `build/imgs/flight.mp4` | 합성 궤적 재생 | 1156x674 (가로비 1.72) |
 
 - 보완: 원본을 `materials/` 에 넣고 다시 "컨텐츠 제작" 을 지시한다. 특히
   `rmse_plot` 은 **합성 파형이므로 그대로 발표에 쓰지 않는다.** 실측 로그로 교체한다

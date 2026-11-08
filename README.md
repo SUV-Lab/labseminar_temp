@@ -17,7 +17,7 @@
 
 | 단계 | 수행 내용 | 주체 | 산출물 |
 |---|---|---|---|
-| 1 | `./create.sh` | 사용자 | `contents.md`, `materials/`, `output/imgs/` |
+| 1 | `./create.sh` | 사용자 | `contents.md`, `materials/`, `build/imgs/` |
 | 2 | `contents.md` 에 발표 내용을 작성 | 사용자 | `contents.md` |
 | 3 | 클로드에 **"컨텐츠 제작"** 지시 | 클로드 | `slide.md`, `review.md`, 덱 HTML, PDF |
 | 4 | `review.md` 를 확인하고 지적 사항을 `contents.md` 에 반영한 뒤 3 단계를 재수행 | 사용자 | 보완된 `contents.md` 와 재생성된 산출물 |
@@ -58,7 +58,7 @@
 ./create.sh
 ```
 
-`contents.md`, `materials/`, `output/imgs/` 를 생성한다. `contents.md` 가 이미 존재하면
+`contents.md`, `materials/`, `build/imgs/` 를 생성한다. `contents.md` 가 이미 존재하면
 덮어쓰지 않는다.
 
 ### 2. contents.md 작성
@@ -78,7 +78,7 @@
 | `- ` | 문단 하나를 압축한 한 문장 |
 | `구분 슬라이드: 필요` | 해당 장 앞에 파트 구분 슬라이드를 삽입한다. 장 이름만 배치하며 머리말, 푸터, 번호를 두지 않는다 |
 
-원본 자료는 `materials/` 에 배치한다. 덱에 포함되는 변환본은 클로드가 `output/imgs/` 에
+원본 자료는 `materials/` 에 배치한다. 덱에 포함되는 변환본은 클로드가 `build/imgs/` 에
 생성한다.
 
 | 종류 | 표기 |
@@ -100,9 +100,12 @@
 |---|---|
 | `slide.md` | 발표자료 원고. 수식, 표, 그림, 동영상을 포함한 마크다운 |
 | `review.md` | 발표 내용의 부족한 부분, 논리적 결함, 보완 사항 |
-| `output/<타이틀>_<학생이름>.html` | `design/` 규격의 덱 HTML |
+| `build/<타이틀>_<학생이름>.html` | `design/` 규격의 덱 HTML. 편집용 원본이며 `build/imgs/` 와 디자인 사본을 참조한다 |
+| `output/<타이틀>_<학생이름>.html` | 배포용 단일 HTML. CSS, JS, 그림, 동영상, 폰트, 수식 SVG 를 모두 포함하므로 이 파일 하나만 받으면 오프라인에서도 발표 및 발표자 노트(`N`)가 동작한다 |
 | `output/<타이틀>_<학생이름>.pdf` | `build.sh` 실행으로 생성한 PDF |
-| `output/<타이틀>_<학생이름>.standalone.html` | 배포용 단일 HTML. CSS, JS, 그림, 동영상, 폰트, 수식 SVG 를 모두 포함하므로 이 파일 하나만 받으면 오프라인에서도 발표 및 발표자 노트(`N`)가 동작한다 |
+
+`output/` 에는 위 두 배포 파일만 둔다. 덱 원본, 그림, 디자인 사본 같은 중간 파일은 모두
+`build/` 에 둔다. `build.sh` 는 실행할 때마다 `output/` 을 비우고 다시 만든다.
 
 배포물 이름은 `contents.md` 표지의 `- 주제:` 줄을 타이틀로, `- 발표:` 줄의 마지막
 낱말을 학생 이름으로 사용하여 `<타이틀>_<학생이름>` 으로 결정한다. 타이틀에서 공백과
@@ -131,8 +134,8 @@ slug = ''.join(w[:1].upper() + w[1:] for w in words if w)
 않고 덱 HTML 을 그 자리에서 고친다.
 
 ```bash
-./editor.sh                  # output/ 의 덱을 모두 연다
-./editor.sh output/x.html    # 덱 하나만 연다
+./editor.sh                  # build/ 의 덱을 모두 연다
+./editor.sh build/x.html     # 덱 하나만 연다
 ./editor.sh --port 8899      # 포트 지정. --no-open 은 브라우저를 열지 않는다
 ```
 
@@ -164,11 +167,12 @@ slug = ''.join(w[:1].upper() + w[1:] for w in words if w)
 사용자가 실행한다.
 
 ```bash
-./build.sh                                             # output/ 의 덱 HTML 을 대상으로 한다
+./build.sh                                             # build/ 의 덱 HTML 을 대상으로 한다
 ./build.sh EKFBasedStateEstimationForIndoorUAV_홍길동   # 덱이 여럿인 경우 이름을 지정한다
 ```
 
-`build.sh` 는 PDF 와 함께 `bundle.py` 로 단일 HTML(`*.standalone.html`)을 만든다.
+`build.sh` 는 `bundle.py` 로 `build/` 의 덱을 단일 HTML(`output/<덱>.html`)로 묶는다.
+예전처럼 덱 원본이 `output/` 에 있으면 처음 한 번 `build/` 로 옮긴다.
 원격 자원(Google Fonts)은 이때 내려받으므로 빌드 시에만 네트워크가 필요하다.
 수식(`data-tex`)은 `latex` 와 `dvisvgm --no-fonts` 로 글리프를 경로로 바꾼 SVG 그림이 되어
 들어간다. 보는 쪽에는 KaTeX 도 수식 폰트도 필요 없다. 원본 TeX 는 `data-tex-src` 와 `alt` 에
@@ -180,7 +184,7 @@ PDF 도 이 단일 HTML 을 인쇄하여 만든다.
 ### 7. 발표
 
 `output/<타이틀>_<학생이름>.html` 을 브라우저에서 열고 `F` 를 입력한다. 다른 컴퓨터에서
-발표할 때는 `output/<타이틀>_<학생이름>.standalone.html` 하나만 옮겨서 연다.
+발표할 때도 이 파일 하나만 옮겨서 연다.
 
 | 키 | 동작 |
 |---|---|

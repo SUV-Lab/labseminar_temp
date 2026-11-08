@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Bundle a deck HTML into one self-contained file.
 
-    python3 bundle.py output/<deck>.html output/<deck>.standalone.html
+    python3 bundle.py build/<deck>.html output/<deck>.html
 
 Inlines local and remote stylesheets, scripts, images, videos, the lab logo
 and Google web fonts. present.js is followed by presenter.js so the presenter
