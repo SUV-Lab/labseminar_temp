@@ -370,3 +370,10 @@ a { color: var(--sky); text-decoration: none; }
   .body { flex: none; height: 63vh; }
   figure.fig, .body[data-layout] > .body-media { max-height: 100%; }
 }
+/* Speaker scripts stay out of audience views and print even before JS loads. */
+.speaker-notes,
+[data-speaker-notes],
+.speaker-qa,
+[data-speaker-qa] {
+  display: none !important;
+}

@@ -4,7 +4,7 @@
 #   ./build.sh "<타이틀>_<학생이름>"   그 덱만 굽는다
 #
 # 폴더 구실
-#   design/     디자인 원본. deck.css, layout.css, present.js, mydesign.md, template.html
+#   design/     디자인 원본. deck.css, layout.css, present.js, presenter.js, mydesign.md, template.html
 #   output/     덱 원본과 배포물. 덱 이름은 <타이틀>_<학생이름> 이다
 #   materials/  근거 자료와 원본 미디어. 배포물에 들어가지 않는다
 #
@@ -26,7 +26,7 @@ fi
 [ -f "output/$DECK.html" ] || { echo "output/$DECK.html 이 없다" >&2; exit 1; }
 
 # 1) 디자인 파일을 덱 옆으로 내려보낸다. design/ 이 유일한 원본이다
-cp design/deck.css design/layout.css design/present.js output/
+cp design/deck.css design/layout.css design/present.js design/presenter.js output/
 # 로고는 deck.css 의 --lab-logo 가 참조하는 이름으로 둔다. 이미 있으면 그대로 쓴다
 [ -f output/suvlab_logo.png ] || cp design/assets/lab_logo.png output/suvlab_logo.png
 

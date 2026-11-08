@@ -47,6 +47,12 @@ deck-stage { display: block; }
   <h1 class="display">Deck Title</h1>
   <div class="sun-rule"></div>
   <p class="presenter">소속 발표자</p>
+  <!-- N 키로 발표자 창에서만 읽는 대본. 청중 화면과 PDF에는 나타나지 않는다. -->
+  <aside class="speaker-notes" hidden>
+    <p>Thank you for the introduction.</p>
+    <p>Today, I will present our work.</p>
+    <p><strong>[다음 슬라이드]</strong></p>
+  </aside>
 </section>
 
 <!-- 목차. data-label 을 "목차" 로 두어야 글자 키우기 규칙이 걸린다 -->
@@ -169,6 +175,15 @@ deck-stage { display: block; }
 </section>
 
 </deck-stage>
+
+<!-- Q: 발표자 창에서만 보는 질의응답. data-pages는 표지·구분장을 포함한 화면 번호. -->
+<template class="speaker-qa">
+  <article data-qa-card data-category="질문 확인" data-keywords="repeat 질문 다시">
+    <h3 data-qa-question>질문을 다시 듣기</h3>
+    <p data-qa-answer>Could you repeat the question, please?</p>
+    <p data-qa-note>영어만 읽습니다. 이 메모는 청중에게 표시되지 않습니다.</p>
+  </article>
+</template>
 
 <script src="present.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>

@@ -10,3 +10,6 @@
 
 # 편집기가 덱 옆에 만드는 배치 스타일
 /design/cde-layout.css
+
+# Python browser checks
+__pycache__/

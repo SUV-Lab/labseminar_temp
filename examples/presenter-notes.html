@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>SUV Lab · Presenter Notes Demo</title>
+  <base href="../design/">
+  <link rel="stylesheet" href="deck.css">
+  <link rel="stylesheet" href="layout.css">
+  <style>
+    @page { size: 1920px 1080px; margin: 0; }
+    html, body { margin: 0; padding: 0; }
+    deck-stage { display: block; --lab-logo: url('assets/lab_logo.png'); }
+    .slide { width: 1920px; height: 1080px; overflow: hidden; box-sizing: border-box; break-after: page; }
+    .slide:last-child { break-after: auto; }
+    .demo-panel { padding: 40px; border: 2px solid var(--outline); border-radius: 18px; }
+    .demo-panel h3 { margin: 0 0 30px; }
+    .demo-canvas { width: 100%; height: 360px; display: block; }
+    .demo-control { font: inherit; color: var(--sky-deep); background: white; border: 2px solid var(--sky); border-radius: 12px; padding: 14px 28px; }
+  </style>
+</head>
+<body>
+<deck-stage>
+  <section class="slide cover" data-label="Presenter Notes">
+    <span class="course">SUV LAB</span>
+    <span class="kicker">Presentation tools</span>
+    <h1 class="display">Presenter Notes</h1>
+    <div class="sun-rule"></div>
+    <p class="presenter">별도 화면에서 읽는 발표 대본</p>
+    <aside class="speaker-notes" hidden>
+      <p>Thank you for the introduction.</p>
+      <p>Today, I will show how to use the presenter view.</p>
+      <p>The audience sees the slides. I can read my script here.</p>
+      <p><strong>[다음 슬라이드]</strong></p>
+    </aside>
+  </section>
+  <section class="slide" data-label="Read the script">
+    <header class="head"><span class="kicker">Presenter view</span></header>
+    <h2 class="title">Read the script</h2><div class="rule"></div>
+    <div class="body" data-layout="right" style="--cols:1;--split:50%">
+      <div class="body-text demo-panel"><h3>Audience</h3><ul class="ul">
+        <li>Full-screen slides</li><li>Figures and videos</li><li>No speaker notes</li>
+      </ul></div>
+      <div class="body-media"><div class="demo-panel"><h3>Presenter</h3><ul class="ul">
+        <li>Large script text</li><li>Current and next slide</li><li>Navigation and timer</li>
+      </ul></div></div>
+    </div>
+    <footer class="foot"><span class="foot-sec">Presenter view</span><span class="foot-num">01 / 03</span></footer>
+    <aside class="speaker-notes" hidden>
+      <p>This is a longer script for the second slide.</p>
+      <p>Use the text-size buttons to make it comfortable to read.</p>
+      <p>The next button changes both the audience slide and these notes.</p>
+      <p>You can also use the arrow keys while the notes pane has focus.</p>
+      <p><strong>[A＋로 글씨 크기를 확인한 뒤 다음 장]</strong></p>
+    </aside>
+  </section>
+  <section class="slide" data-label="Animation controls">
+    <header class="head"><span class="kicker">Media</span></header>
+    <h2 class="title">Animation controls</h2><div class="rule"></div>
+    <div class="body" data-layout="text">
+      <div class="body-text">
+        <p class="lead">Play and reset from either window.</p>
+        <canvas id="demo-animation" class="demo-canvas" width="1696" height="360" aria-label="A blue dot moving across a line"></canvas>
+        <button class="demo-control" id="demo-toggle" type="button">Play / pause</button>
+        <button class="demo-control" id="demo-reset" type="button">Reset</button>
+      </div>
+    </div>
+    <footer class="foot"><span class="foot-sec">Media</span><span class="foot-num">02 / 03</span></footer>
+    <aside class="speaker-notes" hidden>
+      <p><strong>[P 또는 영상 재생 버튼]</strong></p>
+      <p>The blue dot now moves across the line.</p>
+      <p>The current slide preview follows the animation on the audience screen.</p>
+      <p><strong>[R 또는 영상 초기화 버튼 → 다음 장]</strong></p>
+    </aside>
+  </section>
+  <section class="slide" data-label="No notes">
+    <header class="head"><span class="kicker">Optional notes</span></header>
+    <h2 class="title">Notes are optional</h2><div class="rule"></div>
+    <div class="body" data-layout="text"><div class="body-text">
+      <p class="lead">Slides without notes work as before.</p>
+      <ul class="ul"><li>Press N to open or return to the presenter window.</li>
+      <li>Use an extended display, with the slide window on the projector.</li></ul>
+    </div></div>
+    <footer class="foot"><span class="foot-sec">Optional notes</span><span class="foot-num">03 / 03</span></footer>
+  </section>
+</deck-stage>
+<!-- Private Q&A; template content is inert and never printed with the slides. -->
+<template class="speaker-qa">
+  <article data-qa-card data-category="질문 확인" data-keywords="repeat again 질문 다시">
+    <h3 data-qa-question>질문을 다시 듣기</h3>
+    <p data-qa-answer>Could you repeat the question, please?</p>
+    <p data-qa-note>질문을 이해한 뒤 해당 답변을 선택합니다.</p>
+  </article>
+  <article data-qa-card data-category="발표 화면" data-pages="2" data-keywords="notes script 대본 글씨">
+    <h3 data-qa-question>대본을 더 크게 보는 방법</h3>
+    <p data-qa-question-en>How can I make the script easier to read?</p>
+    <p data-qa-answer>Use the reading layout and increase the text size.</p>
+    <p data-qa-note>대본 중심 버튼과 A＋를 사용할 수 있습니다.</p>
+  </article>
+  <article data-qa-card data-category="발표 화면" data-pages="3" data-keywords="animation play pause 영상 재생">
+    <h3 data-qa-question>노트 창에서 재생을 조작할 수 있나요?</h3>
+    <p data-qa-question-en>Can I control playback from the presenter window?</p>
+    <p data-qa-answer>Yes. Press P to play or pause, and R to reset.</p>
+    <p data-qa-note>질문을 선택하는 동안 청중 슬라이드는 바뀌지 않습니다.</p>
+  </article>
+</template>
+<script src="present.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById('demo-animation');
+  var context = canvas.getContext('2d');
+  var position = 0, playing = false, last = performance.now();
+  var requestFrame = SUVPresent.requestAnimationFrame;
+  function draw() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.strokeStyle = '#cbd5e1'; context.lineWidth = 8;
+    context.beginPath(); context.moveTo(90, 180); context.lineTo(1606, 180); context.stroke();
+    context.fillStyle = '#1d4ed8'; context.beginPath();
+    context.arc(90 + position * 1516, 180, 26, 0, Math.PI * 2); context.fill();
+  }
+  function control(action) {
+    if (action === 'reset') { playing = false; position = 0; }
+    else playing = !playing;
+    draw();
+  }
+  document.getElementById('demo-toggle').onclick = function () { control('toggle'); };
+  document.getElementById('demo-reset').onclick = function () { control('reset'); };
+  document.addEventListener('suv:media', function (event) {
+    if (event.detail.slide !== canvas.closest('.slide')) return;
+    event.preventDefault(); control(event.detail.action);
+  });
+  document.addEventListener('suv:slidechange', function (event) {
+    if (event.detail.index !== 2) playing = false;
+  });
+  document.addEventListener('suv:playbackvisibility', function () {
+    if (!SUVPresent.playbackVisible()) playing = false;
+  });
+  function tick(now) {
+    if (playing) position = (position + Math.min(now - last, 100) / 5000) % 1;
+    last = now; draw(); requestFrame(tick);
+  }
+  requestFrame(tick);
+})();
+</script>
+</body>
+</html>
