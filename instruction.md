@@ -1,8 +1,10 @@
 # INITIALIZATION
+
 - create.sh를 수행하면 contents.md와 materials 디렉토리가 생성된다. 
   - contents.md에는 장절을 갖춘 샘플 양식을 추가해준다.  (타이틀 포함하여 5장 정도 포함, 필요시 세부 장에 대한 구분 슬라이드도 포함)
-  
+
 # INSTRUCTION
+
 - 사용자가 직접 작성한 contents.md를 기반으로 작성한다.
   - contents.md에는 장절로 나누어져있고, 문단 단위로 압축하여 한 문장 정도로 작성한다.
 - contents.md를 작성하였으면 클로드에 "컨텐츠 제작"를 지시한다. 클로드는 다음을 한 번에 모두 수행한다.
@@ -18,6 +20,7 @@
   - 보완할 사항에 대해 명시적으로 작성한다.
 
 ## PRESENTATION DESIGN
+
 - 발표자료의 디자인은 design/mydesign.md를 사용한다.
 - 발표자료 내용은 slide.md에 마크다운 형태로 작성한다.
   - 수식, 표, 및 그림/동영상은 동일하게 포함시킨다.
@@ -38,6 +41,7 @@
   - 예: "문제 — 조교 노트북에서 되는 코드가 내 노트북에서 빌드조차 안 된다."
 
 ## REVIEW
+
 - 전체 구조가 잘 맞는지 확인한다.
   - Introduction, Related Works, Problem Definition, Proposed Method, Experiments, Conclusion
 - 논리적으로 허점이 있는지 확인한다.
@@ -47,8 +51,10 @@
 - 실험 결과로 그래프 및 테이블이 있는지 확인한다.
 - 실험 결과에 대한 비교 대상이 있는지 확인한다.
 
-
 # DISTRIBUTION
+
 - 배포시 필요 데이터 및 결과물은 output 폴더에 위치한다.
+- html은 하나의 파일로 모두 열릴 수 있도록 모든 컨텐츠를 내부에 포함해야 한다.
+  - 이때 수식은 SVG 형태로 기입하여 latex 설치하지 않고도 동작되도록 한다.
 - pdf 뿐만 아니라 html, 이미지 동영상등이 여기에 포함되어야 한다.
 
