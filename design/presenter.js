@@ -50,8 +50,9 @@
     /* Mirrors the audience laser pointer; matches the cursor drawn by present.js. */
     '.current-pane .preview-box { cursor: crosshair; }',
     /* Play/pause buttons over each video of the current preview. */
-    '.video-hotspot { position: absolute; z-index: 1; display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; border: 2px dashed rgba(220, 38, 38, .7); border-radius: 4px; background: transparent; cursor: pointer; }',
-    '.video-hotspot:hover, .video-hotspot:focus-visible { border-style: solid; border-color: #dc2626; background: rgba(15, 23, 42, .12); outline: none; }',
+    /* Scoped under .preview-box to outrank the generic opaque button:hover style. */
+    '.preview-box .video-hotspot { position: absolute; z-index: 1; display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; border: 2px dashed rgba(220, 38, 38, .7); border-radius: 4px; background: transparent; cursor: pointer; }',
+    '.preview-box .video-hotspot:hover, .preview-box .video-hotspot:focus-visible { border-style: solid; border-color: #dc2626; background: transparent; outline: none; }',
     '.video-hotspot span { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: rgba(15, 23, 42, .82); color: #fff; font: 600 14px system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }',
     '.video-hotspot svg { width: 20px; height: 20px; fill: currentColor; }',
     '.video-hotspot.playing span { background: rgba(220, 38, 38, .9); }',

@@ -136,6 +136,9 @@ def run(out):
             assert all(abs(box[k] - want[k]) < .01 for k in want), box
             assert box['visible'] and box['label'] == '청중 화면 동영상 재생', box
             p.screenshot(out / 'video_button.png')
+            hover_preview(p, .6, .6)  # hovering must not cover the video with an opaque fill
+            wait_for(p, HOT + '.matches(":hover")')
+            assert evaluate(p, 'getComputedStyle(%s).backgroundColor' % HOT) == 'rgba(0, 0, 0, 0)'
             assert evaluate(c, 'document.querySelector("#v").paused')
             hover_preview(p, .75, .8, 'click')
             wait_for(c, '!document.querySelector("#v").paused')
@@ -151,7 +154,7 @@ def run(out):
             wait_for(p, '!' + HOT)
             c.key('ArrowLeft')
             wait_for(p, '!!' + HOT)
-            checks.append('A visible play/pause button over the preview video controls the audience video, tracks its state and follows slide changes')
+            checks.append('A visible, see-through play/pause button over the preview video controls the audience video, tracks its state and follows slide changes')
 
             hover_preview(p, .4, .4)
             wait_for(c, '!document.querySelector("#suv-laser").hidden')
