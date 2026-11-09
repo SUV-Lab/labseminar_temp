@@ -23,6 +23,8 @@ python3 tests/test_presenter_qa.py --output /tmp/suvlab-presenter-qa
 python3 tests/test_presenter_qa_preview.py --output /tmp/suvlab-presenter-qa-preview
 # 많은 질문을 훑는 전체 목록·분류·답변 전환 검사
 python3 tests/test_presenter_qa_browse.py --output /tmp/suvlab-presenter-qa-browse
+# 레이저 포인터 양방향 공유와 미리보기에서 누른 동영상의 청중 화면 재생 확인
+python3 tests/test_presenter_laser.py --output /tmp/suvlab-presenter-laser
 ```
 
 새 임시 브라우저 프로필에서 오프라인 `file://` 덱을 연다. 로컬 파일 접근·동일 출처

@@ -89,6 +89,23 @@
     '  transform: translate(-50%, -50%) scale(var(--present-scale, 1));',
     '  transform-origin: center center; box-shadow: none;',
     '}',
+    /* 발표 중에는 슬라이드 위 마우스가 레이저 포인터(빨간 점)로 보인다.
+       동영상은 재생 막대를 다뤄야 하므로 기본 커서를 둔다. */
+    'body.presenting, body.presenting .slide.current * {',
+    '  cursor: url("data:image/svg+xml,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">' +
+      '<circle cx="16" cy="16" r="14" fill="#ef4444" fill-opacity=".25"/>' +
+      '<circle cx="16" cy="16" r="8" fill="#ef4444" fill-opacity=".5"/>' +
+      '<circle cx="16" cy="16" r="5" fill="#dc2626" stroke="#fff" stroke-width="1.5"/></svg>') +
+      '") 16 16, crosshair;',
+    '}',
+    'body.presenting .slide.current video { cursor: auto; }',
+    /* 발표자 창에서 가리킨 위치. 청중 화면의 커서 점과 같은 모양이다. */
+    '#suv-laser { position: fixed; z-index: 99998; width: 16px; height: 16px; margin: -8px 0 0 -8px;',
+    '  border-radius: 50%; background: #dc2626; border: 2px solid #fff; pointer-events: none;',
+    '  box-shadow: 0 0 0 6px rgba(239, 68, 68, .5), 0 0 0 14px rgba(239, 68, 68, .25); }',
+    '#suv-laser[hidden] { display: none; }',
+    '@media print { #suv-laser { display: none !important; } }',
     /* 동영상은 그림과 같은 상자 규칙을 쓴다. deck.css 의 `figure.fig img` 가
        타입+클래스(0,1,1) 이므로 여기도 같은 형태로 맞춘다. */
     'figure.fig video {',
@@ -360,6 +377,79 @@
     return function () { listeners = listeners.filter(function (item) { return item !== fn; }); };
   }
 
+  // Laser pointer position for the presenter view, as fractions of the current
+  // slide ({x, y} in 0..1) or null when the audience sees no laser dot.
+  // Kept apart from notify() so mouse moves do not re-render the notes.
+  var pointerListeners = [];
+  var pointerAt = null;
+  function publishPointer(next) {
+    if (next === pointerAt || (next && pointerAt && next.x === pointerAt.x && next.y === pointerAt.y)) return;
+    pointerAt = next;
+    pointerListeners.slice().forEach(function (fn) {
+      try { fn(next); } catch (e) { /* A closed presenter must not interrupt the audience. */ }
+    });
+  }
+  function subscribePointer(fn) {
+    pointerListeners.push(fn);
+    fn(pointerAt);
+    return function () { pointerListeners = pointerListeners.filter(function (item) { return item !== fn; }); };
+  }
+  // Dot drawn on the audience slide when the presenter points at the preview.
+  var laserEl = null;
+  function showLaser(p) {
+    if (!p) { if (laserEl) laserEl.hidden = true; return; }
+    if (!laserEl) {
+      laserEl = document.createElement('div');
+      laserEl.id = 'suv-laser';
+      document.body.appendChild(laserEl);
+    }
+    var box = slides[at].getBoundingClientRect();
+    laserEl.style.left = (box.left + box.width * p.x) + 'px';
+    laserEl.style.top = (box.top + box.height * p.y) + 'px';
+    laserEl.hidden = false;
+  }
+  function pointable() {
+    var body = document.body.classList;
+    return connected() && !!slides[at] && body.contains('presenting') && !body.contains('suv-blackout');
+  }
+  // Presenter view entry points; p is {x, y} as fractions of the current slide.
+  function pointAt(p) {
+    if (!pointable()) p = null;
+    showLaser(p);
+    publishPointer(p);
+  }
+  // Videos on the current slide as fractions of the slide, for the presenter's
+  // play/pause buttons drawn over its preview.
+  function slideVideos() {
+    var slide = slides[at];
+    var box = slide ? slide.getBoundingClientRect() : null;
+    if (!box || !box.width) return [];
+    return [].map.call(slide.querySelectorAll('video'), function (v) {
+      var r = v.getBoundingClientRect();
+      return {x: (r.left - box.left) / box.width, y: (r.top - box.top) / box.height,
+        w: r.width / box.width, h: r.height / box.height, paused: v.paused};
+    });
+  }
+  function toggleVideo(index) {
+    if (!connected()) return;
+    var video = slides[at] && slides[at].querySelectorAll('video')[index];
+    if (!video) return;
+    if (video.paused) { var playing = video.play(); if (playing && playing.catch) playing.catch(function () {}); }
+    else video.pause();
+  }
+  function trackPointer(ev) {
+    var slide = slides[at];
+    showLaser(null);  // The audience mouse takes over from the presenter's pointer.
+    var body = document.body.classList;
+    // Over a video the audience sees the normal cursor, so no laser dot either.
+    if (!slide || !body.contains('presenting') || body.contains('suv-blackout') ||
+        (ev.target instanceof Element && ev.target.closest('video'))) { publishPointer(null); return; }
+    var box = slide.getBoundingClientRect();
+    var x = (ev.clientX - box.left) / box.width;
+    var y = (ev.clientY - box.top) / box.height;
+    publishPointer(x >= 0 && x <= 1 && y >= 0 && y <= 1 ? {x: x, y: y} : null);
+  }
+
   // SVG/SMIL timelines must not run independently in either preview.
   var PREVIEW_SKIP = PRIVATE_CONTENT + ', script, iframe, object, embed, audio, source, track, animate, animateColor, animateMotion, animateTransform, set';
   var PREVIEW_DROP_ATTR = /^(?:on.*|srcdoc|autofocus|contenteditable)$/i;
@@ -536,6 +626,33 @@
     var dirty = true, closed = false;
     var mediaPairs = [], propertyPairs = [];
     var posters = new WeakMap();
+    // Each audience video gets a hidden twin that plays the same file inside the
+    // presenter window. Chrome stops decoding video in a hidden or covered window,
+    // so copying the audience frames alone turns the preview black.
+    var shadows = new Map();
+    function shadowFor(source) {
+      var resource = source.srcObject || source.currentSrc || source.src;
+      if (!resource) return null;
+      var shadow = shadows.get(source);
+      if (!shadow) {
+        shadow = target.ownerDocument.createElement('video');
+        shadow.muted = true; shadow.playsInline = true; shadow.preload = 'auto';
+        shadows.set(source, shadow);
+      }
+      if (source.srcObject) {
+        if (shadow.srcObject !== source.srcObject) shadow.srcObject = source.srcObject;
+      } else if (shadow.src !== resource) shadow.src = resource;
+      if (shadow.playbackRate !== source.playbackRate) shadow.playbackRate = source.playbackRate;
+      if (!source.srcObject && !shadow.seeking &&
+          Math.abs(shadow.currentTime - source.currentTime) > (source.paused ? 0.04 : 0.3)) {
+        try { shadow.currentTime = source.currentTime; } catch (e) { /* Not seekable yet. */ }
+      }
+      if (source.paused !== shadow.paused) {
+        if (source.paused) shadow.pause();
+        else { var playing = shadow.play(); if (playing && playing.catch) playing.catch(function () {}); }
+      }
+      return shadow;
+    }
     var observer = new MutationObserver(function () { dirty = true; });
     observer.observe(original, {subtree: true, childList: true, characterData: true, attributes: true});
     function update() {
@@ -562,10 +679,15 @@
           }
           if (!poster.complete || !poster.naturalWidth) return;
           image = poster; width = poster.naturalWidth; height = poster.naturalHeight;
-        } else if (pair.video && (source.readyState < 2 || !width)) {
-          // Keep the last displayed frame during a seek/load stall after Play;
-          // returning to the poster here would flash a frame the audience lacks.
-          return;
+        } else if (pair.video) {
+          var shadow = shadowFor(source);
+          if (shadow && shadow.readyState >= 2 && shadow.videoWidth && !shadow.seeking) {
+            image = shadow; width = shadow.videoWidth; height = shadow.videoHeight;
+          } else if (source.readyState < 2 || !width) {
+            // Keep the last displayed frame during a seek/load stall after Play;
+            // returning to the poster here would flash a frame the audience lacks.
+            return;
+          }
         }
         if (!width || !height) return;
         if (copy.width !== width) copy.width = width;
@@ -581,6 +703,10 @@
     return {update: update, close: function () {
       if (closed) return;
       closed = true; observer.disconnect(); mediaPairs = []; propertyPairs = [];
+      shadows.forEach(function (shadow) {
+        shadow.pause(); shadow.removeAttribute('src'); shadow.srcObject = null; shadow.load();
+      });
+      shadows.clear();
     }};
   }
 
@@ -655,13 +781,14 @@
     syncVideos(null);
     if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
     slides[at].scrollIntoView();
+    pointAt(null);
     notify();
   }
 
   function toggleBlank() {
     if (!connected()) return;
     if (!document.body.classList.contains('presenting')) startPresenting(false);
-    document.body.classList.toggle('suv-blackout');
+    if (document.body.classList.toggle('suv-blackout')) pointAt(null);
     notify();
   }
 
@@ -988,7 +1115,7 @@
   var api = {
     getState: getState, getQA: qaCards, show: navigate, currentIndex: function () { return at; },
     next: function () { navigate(at + 1); }, prev: function () { navigate(at - 1); },
-    toggleBlank: toggleBlank, subscribe: subscribe, preview: preview, mirrorPreview: mirrorPreview, connected: connected,
+    toggleBlank: toggleBlank, subscribe: subscribe, subscribePointer: subscribePointer, pointAt: pointAt, slideVideos: slideVideos, toggleVideo: toggleVideo, preview: preview, mirrorPreview: mirrorPreview, connected: connected,
     openNotes: openPresenter,
     openDisplaySetup: openDisplaySetup,
     requestAnimationFrame: requestPresentationFrame, cancelAnimationFrame: cancelPresentationFrame,
@@ -1076,6 +1203,8 @@
       show(at + 1);
     });
 
+    document.addEventListener('mousemove', trackPointer);
+    document.documentElement.addEventListener('mouseleave', function () { publishPointer(null); });
     window.addEventListener('resize', fit);
     document.addEventListener('fullscreenchange', function () {
       if (!document.fullscreenElement) {

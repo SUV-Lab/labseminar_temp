@@ -47,6 +47,15 @@
     '.preview-heading { margin: 0 0 8px; color: #94a3b8; font-size: 12px; font-weight: 700; }',
     '.preview-box { position: relative; width: 100%; aspect-ratio: 16/9; background: #020617; border: 1px solid #334155; border-radius: 6px; overflow: hidden; }',
     '.preview-box iframe { border: 0; position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; background: #fff; }',
+    /* Mirrors the audience laser pointer; matches the cursor drawn by present.js. */
+    '.current-pane .preview-box { cursor: crosshair; }',
+    /* Play/pause buttons over each video of the current preview. */
+    '.video-hotspot { position: absolute; z-index: 1; display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; border: 2px dashed rgba(220, 38, 38, .7); border-radius: 4px; background: transparent; cursor: pointer; }',
+    '.video-hotspot:hover, .video-hotspot:focus-visible { border-style: solid; border-color: #dc2626; background: rgba(15, 23, 42, .12); outline: none; }',
+    '.video-hotspot span { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: rgba(15, 23, 42, .82); color: #fff; font: 600 14px system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }',
+    '.video-hotspot svg { width: 20px; height: 20px; fill: currentColor; }',
+    '.video-hotspot.playing span { background: rgba(220, 38, 38, .9); }',
+    '#laser-dot { position: absolute; z-index: 1; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #dc2626; border: 2px solid #fff; box-shadow: 0 0 0 5px rgba(239, 68, 68, .35); pointer-events: none; }',
     '.slide-caption { display: flex; align-items: baseline; gap: 10px; margin-top: 10px; min-width: 0; }',
     '#slide-count { color: #93c5fd; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }',
     '#note-title { margin: 0; color: #f8fafc; font-size: 18px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }',
@@ -141,7 +150,7 @@
       '<button id="reading-toggle" type="button" aria-pressed="false">대본 중심</button></div></header>' +
       '<p id="disconnect-message" role="alert" hidden>슬라이드 창 연결이 끊겼습니다. 슬라이드 창에서 N을 눌러 새 발표자 창을 여세요.</p>' +
       '<main><section class="current-pane" aria-label="현재 슬라이드"><h2 class="preview-heading">현재 슬라이드 · 실시간 미리보기</h2>' +
-      '<div class="preview-box"><iframe id="current-preview" title="현재 슬라이드 미리보기" sandbox="allow-same-origin allow-scripts" tabindex="-1"></iframe></div>' +
+      '<div class="preview-box"><iframe id="current-preview" title="현재 슬라이드 미리보기" sandbox="allow-same-origin allow-scripts" tabindex="-1"></iframe><div id="laser-dot" hidden></div></div>' +
       '<p id="current-label" hidden></p><div class="slide-caption"><span id="slide-count"></span><p id="note-title"></p></div></section>' +
       '<section class="next-pane" aria-label="다음 슬라이드"><div><h2 class="preview-heading">다음 슬라이드 · 정지 미리보기</h2><p id="next-label" class="preview-label"></p></div>' +
       '<div class="preview-box"><iframe id="next-preview" title="다음 슬라이드 미리보기" sandbox="allow-same-origin" tabindex="-1"></iframe></div></section>' +
@@ -185,7 +194,7 @@
     var scrollRatios = {};
     var timerRunning = false, elapsed = 0, startedAt = 0;
     var disconnected = false, destroyed = false;
-    var interval, unsubscribe, detachAnimationWindow;
+    var interval, unsubscribe, unsubscribePointer, detachAnimationWindow;
     var liveMirror = null, liveFrame = 0, previewGeneration = 0;
 
     function timerValue() { return elapsed + (timerRunning ? win.performance.now() - startedAt : 0); }
@@ -459,6 +468,7 @@
       el('connection').textContent = state.blank ? '연결됨 · 청중 화면 꺼짐' : '슬라이드 창에 연결됨';
       if (changed) {
         renderPreview(el('current-preview'), el('current-label'), state.index, true);
+        paintVideos();
         renderPreview(el('next-preview'), el('next-label'), state.index + 1);
         if (el('qa-current-only').checked) renderQAList();
       }
@@ -585,6 +595,53 @@
         focusReadingPane();
       }
     }
+    // Pointing at the current preview (only that box) moves the laser on the
+    // audience screen. Buttons drawn over its videos play/pause them there.
+    function previewPoint(event) {
+      var box = event.currentTarget.getBoundingClientRect();
+      var x = (event.clientX - box.left) / box.width, y = (event.clientY - box.top) / box.height;
+      return x >= 0 && x <= 1 && y >= 0 && y <= 1 ? {x: x, y: y} : null;
+    }
+    function previewMove(event) { action(function () { api.pointAt(previewPoint(event)); }); }
+    function previewLeave() { action(function () { api.pointAt(null); }); }
+    var videoLayout = '';
+    function paintVideos() {
+      if (!api.slideVideos) return;
+      var box = el('current-preview').parentNode;
+      var videos = api.slideVideos();
+      var layout = JSON.stringify(videos.map(function (v) {
+        return [v.x, v.y, v.w, v.h].map(function (n) { return n.toFixed(4); });
+      }));
+      if (layout !== videoLayout) {
+        videoLayout = layout;
+        [].forEach.call(box.querySelectorAll('.video-hotspot'), function (b) { b.remove(); });
+        videos.forEach(function (v, i) {
+          var b = doc.createElement('button');
+          b.type = 'button'; b.className = 'video-hotspot'; b.tabIndex = -1;
+          b.style.left = (v.x * 100) + '%'; b.style.top = (v.y * 100) + '%';
+          b.style.width = (v.w * 100) + '%'; b.style.height = (v.h * 100) + '%';
+          b.innerHTML = '<span></span>';
+          b.addEventListener('click', function () {
+            action(function () { api.toggleVideo(i); });
+            paintVideos();
+          });
+          box.appendChild(b);
+        });
+      }
+      [].forEach.call(box.querySelectorAll('.video-hotspot'), function (b, i) {
+        var playing = !!videos[i] && !videos[i].paused;
+        if (b.classList.contains('playing') === playing && b.firstChild.innerHTML) return;
+        b.classList.toggle('playing', playing);
+        b.title = playing ? '청중 화면 동영상 일시정지' : '청중 화면 동영상 재생';
+        b.setAttribute('aria-label', b.title);
+        b.firstChild.innerHTML = playing ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>일시정지' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>재생';
+      });
+    }
+    function paintPointer(p) {
+      var dot = el('laser-dot');
+      dot.hidden = !p;
+      if (p) { dot.style.left = (p.x * 100) + '%'; dot.style.top = (p.y * 100) + '%'; }
+    }
     function resize() { sizePreview(el('current-preview')); sizePreview(el('next-preview')); }
     function cleanup() {
       if (destroyed) return;
@@ -593,6 +650,8 @@
       if (detachAnimationWindow) detachAnimationWindow();
       win.clearInterval(interval);
       if (unsubscribe) unsubscribe();
+      if (unsubscribePointer) unsubscribePointer();
+      try { if (api.pointAt) api.pointAt(null); } catch (e) { /* Opener already gone. */ }
       doc.removeEventListener('keydown', keydown);
       doc.removeEventListener('click', pointerControl);
       win.removeEventListener('resize', resize);
@@ -608,9 +667,16 @@
     win.addEventListener('beforeunload', cleanup);
     if (api.attachAnimationWindow) detachAnimationWindow = api.attachAnimationWindow(win);
     unsubscribe = api.subscribe(render);
+    if (api.subscribePointer) unsubscribePointer = api.subscribePointer(paintPointer);
+    if (api.pointAt) {
+      var currentBox = el('current-preview').parentNode;
+      currentBox.addEventListener('mousemove', previewMove);
+      currentBox.addEventListener('mouseleave', previewLeave);
+    }
     render(api.getState()); paintTimer();
     renderQAAnswer(null); renderQAList();
-    interval = win.setInterval(function () { if (connected()) paintTimer(); }, 250);
+    // ponytail: polls video layout/state at 4 Hz; switch to media events if it ever lags.
+    interval = win.setInterval(function () { if (connected()) { paintTimer(); action(paintVideos); } }, 250);
     notes.focus();
     return cleanup;
   }
