@@ -12,12 +12,13 @@
 
 | 폴더 | 내용 |
 |---|---|
-| `design/` | 디자인 원본. `deck.css`, `layout.css`, `present.js`, `presenter.js`, `mydesign.md`, `template.html` |
+| `design/` | 디자인 원본. `deck.css`, `layout.css`, `present.js`, `presenter.js`, `editor-host.js`, `mydesign.md`, `template.html` |
 | `materials/` | 근거 자료와 원본 미디어. 배포물에 들어가지 않는다 |
 | `build/` | 덱 원본(편집 대상)과 중간 파일. 덱 HTML, `imgs/`, 디자인 사본, 로고 |
 | `output/` | 배포물. 단일 HTML 과 PDF 두 파일만 둔다 |
 
-`build.sh` 는 실행할 때마다 `output/` 을 비우고 다시 만든다. 예전 구조처럼 덱 원본이
+`build.sh` 는 실행할 때마다 `output/` 을 비우고 다시 만든다. 지난 빌드 뒤에 `에디터` 로 수정된
+배포 HTML 이 있으면 지우기 전에 `build/edited-<시각>/` 에 백업한다. 예전 구조처럼 덱 원본이
 `output/` 에 있으면 처음 한 번 `build/` 로 옮긴다.
 
 ## 빌드 단계
@@ -32,6 +33,7 @@
 `bundle.py` 는 Python 표준 라이브러리만 사용한다. 다음을 모두 HTML 안에 넣는다.
 
 - CSS, `present.js`, 발표자 창 `presenter.js`
+- 편집기 `editor/app` 과 `editor-host.js`. `에디터` 버튼이 서버 없이 이 편집기를 연다. `editor/` 서브모듈이 없으면 버튼 없이 빌드한다
 - 그림, 동영상, poster, 로고 (base64)
 - Google Fonts. 덱에 쓰인 글자가 속한 subset 만 넣는다
 - 수식 그림 (아래)

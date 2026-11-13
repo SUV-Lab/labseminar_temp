@@ -56,6 +56,7 @@
     '.present-btn:hover { opacity: 1; }',
     '.presenter-btn { right: 180px; }',
     '.display-btn { right: 360px; }',
+    '.editor-btn { right: 520px; }',
     '#suv-display-dialog { box-sizing: border-box; width: min(620px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;',
     '  border: 1px solid #cbd5e1; border-radius: 16px; padding: 28px; color: #0f172a; background: #fff; font: 16px/1.6 system-ui, sans-serif; }',
     '#suv-display-dialog::backdrop { background: rgba(15,23,42,.65); }',
@@ -71,7 +72,7 @@
     '#suv-display-status { padding: 12px 14px; background: #eff6ff; border-radius: 8px; }',
     '#suv-display-dialog details { margin-top: 18px; font-size: 14px; color: #475569; }',
     '#suv-display-dialog [hidden] { display: none !important; }',
-    '@media (max-width: 600px) { .display-btn { right: 24px; bottom: 84px; } }',
+    '@media (max-width: 600px) { .display-btn { right: 24px; bottom: 84px; } .editor-btn { right: 180px; bottom: 84px; } }',
     '.present-status { position: fixed; right: 24px; bottom: 88px; z-index: 30;',
     '  max-width: 520px; background: #fff; color: #0f172a; padding: 12px 18px;',
     '  border: 1px solid #93c5fd; border-radius: 8px; font: 18px/1.5 system-ui; }',
@@ -136,6 +137,7 @@
   function injectCss() {
     var st = document.createElement('style');
     st.textContent = CSS;
+    st.setAttribute('data-suv-ui', '');
     document.head.appendChild(st);
   }
 
@@ -401,6 +403,7 @@
     if (!laserEl) {
       laserEl = document.createElement('div');
       laserEl.id = 'suv-laser';
+      laserEl.setAttribute('data-suv-ui', '');
       document.body.appendChild(laserEl);
     }
     var box = slides[at].getBoundingClientRect();
@@ -606,7 +609,7 @@
         });
       });
     }
-    var styles = [].map.call(document.querySelectorAll('link[rel="stylesheet"], style'), function (el) {
+    var styles = [].map.call(document.querySelectorAll('link[rel="stylesheet"], style:not([data-suv-fit])'), function (el) {
       var copy = el.cloneNode(true);
       if (el.tagName === 'LINK') copy.href = el.href;
       return copy.outerHTML;
@@ -710,7 +713,22 @@
     }};
   }
 
+  // Outside presenting, the deck fits the window width. A style of its own
+  // (runtime UI: not saved by the editor, not copied into the notes preview).
+  var widthStyle = null;
+  function fitWidth() {
+    if (!widthStyle) {
+      widthStyle = document.createElement('style');
+      widthStyle.setAttribute('data-suv-ui', '');
+      widthStyle.setAttribute('data-suv-fit', '');
+      document.head.appendChild(widthStyle);
+    }
+    var z = document.documentElement.clientWidth / STAGE_W;
+    widthStyle.textContent = '@media screen { body:not(.presenting) deck-stage { zoom: ' + z + '; } }';
+  }
+
   function fit() {
+    fitWidth();
     if (!document.body.classList.contains('presenting')) return;
     var s = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
     document.body.style.setProperty('--present-scale', s);
@@ -823,6 +841,7 @@
       presenterLoaded = new Promise(function (resolve, reject) {
         var script = document.createElement('script');
         script.src = presenterURL;
+        script.setAttribute('data-suv-ui', '');
         script.onload = function () {
           if (window.SUVPresenter) resolve();
           else { presenterLoaded = null; reject(new Error('발표자 화면을 불러오지 못했습니다.')); }
@@ -1024,6 +1043,7 @@
   }
   function createDisplayDialog() {
     displayDialog = document.createElement('dialog');
+    displayDialog.setAttribute('data-suv-ui', '');
     displayDialog.id = 'suv-display-dialog';
     displayDialog.setAttribute('aria-labelledby', 'suv-display-title');
     displayDialog.innerHTML = '<h2 id="suv-display-title">발표 화면 설정</h2>' +
@@ -1134,37 +1154,48 @@
   var NEXT = { ' ': 1, Spacebar: 1, ArrowRight: 1, ArrowDown: 1, PageDown: 1, Enter: 1 };
   var PREV = { ArrowLeft: 1, ArrowUp: 1, PageUp: 1, Backspace: 1 };
 
+  // The deck editor renders this file in its own frames; presentation UI there
+  // would get in the way and be saved into the deck.
+  function insideEditor() {
+    try {
+      var host = window.frameElement && window.frameElement.ownerDocument;
+      return !!(host && host.getElementById('stage') && host.getElementById('rail'));
+    } catch (e) { return false; }
+  }
+
+  function addButton(className, label, title, onClick, keepFocus) {
+    var b = document.createElement('button');
+    b.className = className;
+    b.type = 'button';
+    b.textContent = label;
+    b.title = title;
+    b.setAttribute('data-suv-ui', '');
+    b.addEventListener('click', function () { if (!keepFocus) b.blur(); onClick(); });
+    document.body.appendChild(b);
+    return b;
+  }
+
   function setup() {
+    if (insideEditor()) return;
     injectCss();
+    fitWidth();
     muteAll();
     slides = [].slice.call(document.querySelectorAll('.slide'));
     if (!slides.length) return;
     [].forEach.call(document.querySelectorAll(PRIVATE_CONTENT), function (el) { el.hidden = true; });
 
-    var btn = document.createElement('button');
-    btn.className = 'present-btn';
-    btn.type = 'button';
-    btn.textContent = '전체 화면';
-    btn.title = 'F 키로도 시작. Esc 로 종료';
-    btn.addEventListener('click', function () { btn.blur(); startPresenting(); });
-    document.body.appendChild(btn);
-
-    var notesButton = document.createElement('button');
-    notesButton.className = 'present-btn presenter-btn';
-    notesButton.type = 'button';
-    notesButton.textContent = '발표자 노트';
-    notesButton.title = 'N: 별도 발표자 창 열기 (확장 화면에서 사용)';
-    notesButton.addEventListener('click', function () { notesButton.blur(); openPresenter(); });
-    document.body.appendChild(notesButton);
-    var displayButton = document.createElement('button');
-    displayButton.className = 'present-btn display-btn';
-    displayButton.id = 'suv-display-setup';
-    displayButton.type = 'button';
-    displayButton.textContent = '화면 설정';
-    displayButton.title = '청중 화면과 발표자 화면 선택';
-    displayButton.addEventListener('click', openDisplaySetup);
-    document.body.appendChild(displayButton);
+    addButton('present-btn', '전체 화면', 'F 키로도 시작. Esc 로 종료', function () { startPresenting(); });
+    addButton('present-btn presenter-btn', '발표자 노트', 'N: 별도 발표자 창 열기 (확장 화면에서 사용)',
+      function () { openPresenter(); });
+    addButton('present-btn display-btn', '화면 설정', '청중 화면과 발표자 화면 선택', openDisplaySetup, true)
+      .id = 'suv-display-setup';
+    // editor-host.js is only bundled into the single-file deck (build.sh).
+    if (window.SUVEditor) {
+      addButton('present-btn editor-btn', '에디터', '슬라이드 편집 창 열기. 저장하면 이 HTML 파일에 기록된다',
+        function () { window.SUVEditor.open(); });
+    }
     status = document.createElement('div');
+    status.setAttribute('data-suv-ui', '');
     status.className = 'present-status';
     status.setAttribute('role', 'status');
     document.body.appendChild(status);

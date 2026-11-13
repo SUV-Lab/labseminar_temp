@@ -5,7 +5,8 @@
 
 Inlines local and remote stylesheets, scripts, images, videos, the lab logo
 and Google web fonts. present.js is followed by presenter.js so the presenter
-view (N) works without a sibling file. Equations (data-tex) are typeset with
+view (N) works without a sibling file, and by the editor app (editor/app) with
+editor-host.js so the deck can be edited and saved without editor.py. Equations (data-tex) are typeset with
 latex + dvisvgm into path-only SVG images, so the bundle needs neither KaTeX
 nor math fonts; KaTeX stays inlined only as a fallback when that fails.
 Only the Python stdlib is used. Remote resources need network access at build
@@ -13,8 +14,10 @@ time, not at viewing time.
 """
 import base64
 import html as htmllib
+import json
 import mimetypes
 import re
+import uuid
 import subprocess
 import sys
 import tempfile
@@ -25,6 +28,9 @@ from pathlib import Path
 # Google Fonts serves woff2 only to browsers it recognizes.
 UA = ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/124.0 Safari/537.36')
+EDITOR_APP = Path(__file__).resolve().parent / 'editor' / 'app'
+EDITOR_FILES = {'html': 'editor.html', 'css': 'editor.css', 'chrome': 'cde-chrome.css',
+                'layout': 'cde-layout.css', 'js': 'editor.js'}
 MIME = {'.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf',
         '.svg': 'image/svg+xml', '.mp4': 'video/mp4', '.webm': 'video/webm'}
 missing = []
@@ -167,6 +173,18 @@ def typeset_equations(html, base):
     return html
 
 
+def editor_script(folder):
+    """The in-deck editor: editor/app files plus editor-host.js, or nothing."""
+    host = folder / 'editor-host.js'
+    if not host.exists() or not EDITOR_APP.is_dir():
+        print(f'  editor not embedded: needs {host} and {EDITOR_APP} (git submodule update --init)',
+              file=sys.stderr)
+        return ''
+    app = {key: (EDITOR_APP / name).read_text(encoding='utf-8') for key, name in EDITOR_FILES.items()}
+    return ('\nwindow.SUVEditorApp = ' + json.dumps(app, ensure_ascii=False) + ';\n'
+            + host.read_text(encoding='utf-8'))
+
+
 def script_tag(code):
     return '<script>' + code.replace('</script', '<\\/script') + '</script>'
 
@@ -175,6 +193,10 @@ def bundle(src):
     html = src.read_text(encoding='utf-8')
     base = src.parent
     html = typeset_equations(html, base)
+    # The in-deck editor checks this to make sure it saves over the opened file.
+    if 'name="suv-deck-id"' not in html:
+        html = re.sub(r'<head>', lambda m: m.group(0) + '\n<meta name="suv-deck-id" content="%s">' % uuid.uuid4().hex,
+                      html, count=1)
     js = {}  # loaded later so the font subset sees every UI string
     for ref in re.findall(r'<script[^>]*\ssrc="([^"]+)"[^>]*>\s*</script>', html):
         loc = resolve(ref, base)
@@ -188,6 +210,7 @@ def bundle(src):
                 js[ref] += '\n' + presenter.read_text(encoding='utf-8')
             else:
                 missing.append(f'{presenter} (presenter view N will not open)')
+            js[ref] += editor_script(child_base(loc))
     used = {ord(c) for c in html + ''.join(js.values())}
 
     # Markup passes run before scripts are inlined, so tags quoted in JS stay untouched.

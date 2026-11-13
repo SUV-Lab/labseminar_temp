@@ -9,7 +9,7 @@
 #   output/<덱>.pdf   슬라이드 하나가 한 쪽. output/ 에는 이 두 파일만 둔다
 #
 # 폴더 구실
-#   design/     디자인 원본. deck.css, layout.css, present.js, presenter.js, mydesign.md, template.html
+#   design/     디자인 원본. deck.css, layout.css, present.js, presenter.js, editor-host.js, mydesign.md, template.html
 #   build/      덱 원본(편집 대상)과 중간 파일. 덱 HTML, imgs/, 디자인 사본
 #   output/     배포물. 단일 HTML 과 PDF 두 파일뿐이다. 덱 이름은 <타이틀>_<학생이름> 이다
 #   materials/  근거 자료와 원본 미디어. 배포물에 들어가지 않는다
@@ -39,15 +39,25 @@ fi
 [ -f "build/$DECK.html" ] || { echo "build/$DECK.html 이 없다" >&2; exit 1; }
 
 # 1) 디자인 파일을 덱 옆으로 내려보낸다. design/ 이 유일한 원본이다
-cp design/deck.css design/layout.css design/present.js design/presenter.js build/
+cp design/deck.css design/layout.css design/present.js design/presenter.js design/editor-host.js build/
 # 로고는 deck.css 의 --lab-logo 가 참조하는 이름으로 둔다. 이미 있으면 그대로 쓴다
 [ -f build/suvlab_logo.png ] || cp design/assets/lab_logo.png build/suvlab_logo.png
 
 # 2) 배포용 단일 HTML - 외부 파일 없이 열리도록 모든 자원을 넣는다. 원격 자원은 지금 내려받는다
 #    수식(data-tex)은 latex + dvisvgm 으로 SVG 그림이 된다. KaTeX 없이 보인다
-# output/ 에는 배포물 두 파일만 둔다. 이전 빌드나 다른 덱의 파일은 지운다
+# output/ 에는 배포물 두 파일만 둔다. 이전 빌드나 다른 덱의 파일은 지운다.
+# 단, 덱 안의 에디터로 고쳐 저장한 HTML 은 지우기 전에 build/edited-<시각>/ 에 남긴다
+if [ -f build/.bundled ]; then
+  mapfile -t edited < <(find output -maxdepth 1 -name '*.html' -newer build/.bundled 2>/dev/null)
+  if [ ${#edited[@]} -gt 0 ]; then
+    keep="build/edited-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$keep" && cp "${edited[@]}" "$keep/"
+    echo "에디터로 수정된 배포본을 $keep/ 에 백업했다. 덱 원본(build/)에는 반영되지 않았다" >&2
+  fi
+fi
 rm -rf output && mkdir -p output
 python3 bundle.py "build/$DECK.html" "output/$DECK.html"
+touch build/.bundled
 
 # 3) PDF - 단일 HTML 을 인쇄한다. 슬라이드 하나가 한 쪽이 된다 (1440x810pt)
 #    --virtual-time-budget 은 그림과 웹폰트를 기다리는 시간이다

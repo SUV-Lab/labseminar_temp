@@ -23,6 +23,8 @@ python3 tests/test_presenter_qa.py --output /tmp/suvlab-presenter-qa
 python3 tests/test_presenter_qa_preview.py --output /tmp/suvlab-presenter-qa-preview
 # 많은 질문을 훑는 전체 목록·분류·답변 전환 검사
 python3 tests/test_presenter_qa_browse.py --output /tmp/suvlab-presenter-qa-browse
+# 단일 HTML 의 에디터 버튼으로 편집, 저장, 다시 열기 확인 (editor/ 서브모듈 필요)
+python3 tests/test_editor_embedded.py --output /tmp/suvlab-editor
 # 레이저 포인터 양방향 공유와 미리보기에서 누른 동영상의 청중 화면 재생 확인
 python3 tests/test_presenter_laser.py --output /tmp/suvlab-presenter-laser
 ```
