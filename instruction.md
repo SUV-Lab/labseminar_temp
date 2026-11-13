@@ -22,6 +22,7 @@
 ## PRESENTATION DESIGN
 
 - 발표자료의 디자인은 design/mydesign.md를 사용한다.
+- 수식은 반드시 latex 로 작성하고 svg 형태로 바꾸어서 저장한다.
 - 발표자료 내용은 slide.md에 마크다운 형태로 작성한다.
   - 수식, 표, 및 그림/동영상은 동일하게 포함시킨다.
 - 발표자료는 html로 작성하고 pdf로도 생성한다. PDF는 build.sh 실행으로 굽는다.
